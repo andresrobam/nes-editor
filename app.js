@@ -268,7 +268,7 @@ app.controller("nesEditorController", function($scope) {
     var file_uploads = document.getElementsByClassName('file-upload');
     for (var i = 0; i < file_uploads.length; i++) {
       let file_upload = file_uploads[i];
-      
+
       file_upload.addEventListener('change', function() {
 
         $scope.loading = this.files.length;
@@ -334,11 +334,11 @@ app.controller("nesEditorController", function($scope) {
       var palette;
 
       if (i < 16) {
-        palette = "sprite";
+        palette = "background";
         palette_index = 0;
       }
       else {
-        palette = "background";
+        palette = "sprite";
         palette_index = 1;
       }
 
@@ -424,13 +424,25 @@ app.controller("nesEditorController", function($scope) {
   			value = value | $scope.attribute_tables[table_index][x][y][1][0] << 2;
   			value = value | $scope.attribute_tables[table_index][x][y][0][1] << 4;
   			value = value | $scope.attribute_tables[table_index][x][y][1][1] << 6;
+
+      	bytes.push(value);
   		}
   	}
 
-  	bytes.push(value);
+    var number = parseInt($scope.tab.substr(-1));
+    var part = 1;
 
-    var number = $scope.tab.substr(-1);
+    var out = [];
 
+    for (var i = 0; i < bytes.length; i++) {
+      out.push(bytes[i]);
+
+      if (out.length === 256) {
+        saveByteArray(out, name+"_"+number+"_"+part+".ntpart");
+        out = [];
+        part++;
+      }
+    }
   	saveByteArray(bytes, name+"_"+number+".nt");
   };
 
@@ -450,11 +462,11 @@ app.controller("nesEditorController", function($scope) {
       var palette;
 
       if (i < 16) {
-        palette = "sprite";
+        palette = "background";
         palette_index = 0;
       }
       else {
-        palette = "background";
+        palette = "sprite";
         palette_index = 1;
       }
 
@@ -978,10 +990,14 @@ app.controller("nesEditorController", function($scope) {
     var editable_subpalette_index = $scope.selected_palette[editable_palette];
 
     if ($scope.selected_color === 0) {
-      $scope.palettes[editable_palette][0][0] = selected_hex;
-      $scope.palettes[editable_palette][1][0] = selected_hex;
-      $scope.palettes[editable_palette][2][0] = selected_hex;
-      $scope.palettes[editable_palette][3][0] = selected_hex;
+      $scope.palettes.sprite[0][0] = selected_hex;
+      $scope.palettes.sprite[1][0] = selected_hex;
+      $scope.palettes.sprite[2][0] = selected_hex;
+      $scope.palettes.sprite[3][0] = selected_hex;
+      $scope.palettes.background[0][0] = selected_hex;
+      $scope.palettes.background[1][0] = selected_hex;
+      $scope.palettes.background[2][0] = selected_hex;
+      $scope.palettes.background[3][0] = selected_hex;
     }
     else {
       $scope.palettes[editable_palette][editable_subpalette_index][$scope.selected_color] = selected_hex;
