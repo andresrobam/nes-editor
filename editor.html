@@ -1,0 +1,129 @@
+<html ng-app="nesEditor" ng-controller="nesEditorController">
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular.min.js"></script>
+    <script src="app.js"></script>
+    <link rel = "stylesheet" type = "text/css" href = "style.css"/>
+    <title>NES Graphics Editor</title>
+  </head>
+  <body>
+    <div ng-show="loading !== 0" id="loading"><div id="loader"></div></div>
+    <ul class="navbar">
+      <li class="logo">NES graphics editor</li>
+      <li ng-class="{'selected-tab': tab === 'sprite'}"><a href="" ng-click="changeTab('sprite')">Sprites</a></li>
+      <li ng-class="{'selected-tab': tab === 'background'}"><a href="" ng-click="changeTab('background')">Background tiles</a></li>
+      <li ng-class="{'selected-tab': tab === 'nametable1'}"><a href="" ng-click="changeTab('nametable1')">Nametable 1</a></li>
+      <li ng-class="{'selected-tab': tab === 'nametable2'}"><a href="" ng-click="changeTab('nametable2')">Nametable 2</a></li>
+      <input type="text" id="project-name" ng-model="project_name"/>
+    </ul>
+    <div class="edit-master-wrapper">
+      <div oncontextmenu="return false;" class="editable tileset">
+        <div style="position: relative;">
+          <span style="float: left; display: inline-block;">{{tab === 'sprite' ? 'Sprites' : 'Background tiles'}}</span>
+          <span style="display: block; margin-bottom: 10px;"><br/></span>
+          <span style="display: block; margin-bottom: 10px;"><br/></span>
+          <span style="display: block; margin-bottom: 10px;"><br/></span>
+          <div style="display: table-row; position: absolute; bottom: -5px;" class="tool-icons tool-icons-small">
+            <label ng-show="tab === 'sprite'" style="cursor: pointer;" for="sprite-upload"><img src="icons/upload.svg"></label>
+            <input ng-show="tab === 'sprite'" style="display: none;" type="file" id="sprite-upload" class="file-upload" name="file" accept=".spr"/>
+            <label ng-show="tab !== 'sprite'" style="cursor: pointer;" for="background-upload"><img src="icons/upload.svg"></label>
+            <input ng-show="tab !== 'sprite'" style="display: none;" type="file" id="background-upload" class="file-upload" name="file" accept=".bkg"/>
+            <a href="" ng-click="saveTiles(project_name, tab === 'background' || tab.startsWith('nametable'))"><img src="icons/download.svg"></a>
+          </div>
+        </div>
+        <div class="tilecol" ng-repeat="tile_x in tiles[tab === 'sprite' ? 'sprite' : 'background'] track by $index">
+          <div class="tile" ng-class="{'selected': active_tile_x === $parent.$index &amp;&amp; active_tile_y === $index}" ng-click="selectTile($parent.$index, $index);" ng-repeat="tile_y in tile_x track by $index">
+            <div class="pixelcol" ng-repeat="x in tile_y track by $index">
+              <div class="pixel" ng-repeat="y in x track by $index" style="background-color: {{getRGB(getMainColor(palettes[tab === 'sprite' ? 'sprite' : 'background'][selected_palette[tab === 'sprite' ? 'sprite' : 'background']][y]))}};"></div>
+            </div>
+          </div>
+        </div>
+        <div class="tool-icons">
+          <a href="" ng-click="shift_tiles_left()"><img src="icons/left.svg"></a>
+          <a href="" ng-click="shift_tiles_right()"><img src="icons/right.svg"></a>
+        </div>
+      </div>
+
+      <div ng-show="!tab.startsWith('nametable')" class="edit-wrapper">
+        <div style="position: relative;">
+          <span style="float: left; display: inline-block;">{{tab === 'sprite' ? 'Sprite' : 'Background tile'}}</span>
+          <span style="display: block; margin-bottom: 10px;" ng-repeat="number in getNumbers(active_tile_y*16 + active_tile_x) track by $index">{{number}}</span>
+          <div style="display: table-row; position: absolute; bottom: -5px;" class="tool-icons tool-icons-small">
+            <a href="" ng-click="copy()"><img src="icons/copy.svg"></a>
+            <a href="" ng-class="{'disabled-icon': clipboard === null}" ng-click="clipboard !== null &amp;&amp; paste()"><img src="icons/paste.svg"></a>
+            <a href="" ng-class="{'disabled-icon': undos.length === 0}" ng-click="undos.length !== 0 &amp;&amp; undo()"><img src="icons/undo.svg"></a>
+            <a href="" ng-class="{'disabled-icon': redos.length === 0}" ng-click="redos.length !== 0 &amp;&amp; redo()"><img src="icons/redo.svg"></a>
+          </div>
+        </div>
+        <div oncontextmenu="return false;">
+          <div ng-if="!tab.startsWith('nametable')" class="pixelcol" ng-repeat="x in tiles[tab][active_tile_x][active_tile_y] track by $index">
+            <div class="big-pixel" ng-repeat="y in x track by $index" ng-mousedown="paint($event, tab, active_tile_x, active_tile_y, $parent.$index, $index);" ng-mouseover="paint($event, tab, active_tile_x, active_tile_y, $parent.$index, $index);" style="background-color: {{getRGB(getMainColor(palettes[tab][selected_palette[tab]][y]))}};"></div>
+          </div>
+        </div>
+        <div class="tool-icons">
+          <a href="" ng-click="ccw()"><img src="icons/ccw.svg"></a>
+          <a href="" ng-click="cw()"><img src="icons/cw.svg"></a>
+          <a href="" ng-click="flip_horizontal()"><img src="icons/horizontal.svg"></a>
+          <a href="" ng-click="flip_vertical()"><img src="icons/vertical.svg"></a>
+
+          <a href="" ng-click="shift_left()"><img src="icons/left.svg"></a>
+          <a href="" ng-click="shift_right()"><img src="icons/right.svg"></a>
+          <a href="" ng-click="shift_up()"><img src="icons/up.svg"></a>
+          <a href="" ng-click="shift_down()"><img src="icons/down.svg"></a>
+        </div>
+      </div>
+
+      <div ng-show="tab.startsWith('nametable')" class="edit-wrapper nametable" oncontextmenu="return false;">
+        <div class="tileset">
+          <div style="position: relative;">
+            <span style="float: left; display: inline-block;">{{tab === 'nametable1' ? 'Nametable 1' : 'Nametable 2'}}</span>
+            <span style="display: block; margin-bottom: 10px;"><br/></span>
+            <span style="display: block; margin-bottom: 10px;"><br/></span>
+            <span style="display: block; margin-bottom: 10px;"><br/></span>
+            <div style="display: table-row; position: absolute; bottom: -5px;" class="tool-icons tool-icons-small">
+              <label style="cursor: pointer;" for="nametable-upload"><img src="icons/upload.svg"></label>
+              <input style="display: none;" type="file" id="nametable-upload" class="file-upload" name="file" accept=".nt"/>
+              <a href="" ng-click="saveNametable(project_name)"><img src="icons/download.svg"></a>
+              <a href="" ng-class="{'disabled-icon': undos.length === 0}" ng-click="undos.length !== 0 &amp;&amp; undo()"><img src="icons/undo.svg"></a>
+              <a href="" ng-class="{'disabled-icon': redos.length === 0}" ng-click="redos.length !== 0 &amp;&amp; redo()"><img src="icons/redo.svg"></a>
+            </div>
+          </div>
+          <div ng-if="tab.startsWith('nametable')" class="tilecol" ng-repeat="tile_x in nametables[getActiveNametable()] track by $index">
+            <div class="tile" ng-class="{'selected': active_nt_tile_x === $parent.$index &amp;&amp; active_nt_tile_y === $index}" ng-click="setNametableTile($parent.$index, $index, getActiveNametable());" ng-right-click="paintNametable($parent.$index, $index, getActiveNametable());" ng-repeat="tile_y in tile_x track by $index">
+              <div class="pixelcol" ng-repeat="x in backgrounds[getCoordinatesFromIndex(tile_y, 16)[0]][getCoordinatesFromIndex(tile_y, 16)[1]] track by $index">
+                <div class="pixel" ng-repeat="y in x track by $index" style="background-color: {{getRGB(getMainColor(palettes.background[getAttributePalette($parent.$parent.$parent.$index, $parent.$parent.$index, getActiveNametable())][y]))}};"></div>
+              </div>
+            </div>
+          </div>
+          <div class="tool-icons">
+            <a href="" ng-click="shift_nametable_left()"><img src="icons/left.svg"></a>
+            <a href="" ng-click="shift_nametable_right()"><img src="icons/right.svg"></a>
+            <a href="" ng-click="shift_nametable_up()"><img src="icons/up.svg"></a>
+            <a href="" ng-click="shift_nametable_down()"><img src="icons/down.svg"></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="palette" ng-class="{'shifted': choose_color}">
+        <div class="subpalette" ng-class="{'selected-subpalette': selected_palette[tab === 'sprite' ? 'sprite' : 'background'] === $index}" ng-click="selectPalette(tab === 'sprite' ? 'sprite' : 'background', $index);" ng-repeat="subpalette in palettes[tab === 'sprite' ? 'sprite' : 'background'] track by $index">
+          <div style="position: relative;">
+            <span ng-if="$index === 0" style="float: left; display: inline-block;">Palettes</span>
+            <span style="display: block; margin-bottom: 5px;" ng-repeat="number in getNumbers($index) track by $index">{{number}}</span>
+            <div ng-show="$index === 0" style="display: table-row; position: absolute; bottom: -4px;" class="tool-icons tool-icons-small">
+              <label style="cursor: pointer;" for="palette-upload"><img src="icons/upload.svg"></label>
+              <input style="display: none;" type="file" id="palette-upload" class="file-upload" name="file" accept=".pal"/>
+              <a href="" ng-click="savePalette(project_name)"><img src="icons/download.svg"></a>
+              <a href="" ng-click="chooseColor()"><img src="icons/picker.svg"></a>
+            </div>
+          </div>
+          <div oncontextmenu="return false;" ng-class="{'selected-palette-color': selected_color === $index &amp;&amp; selected_palette[tab === 'sprite' ? 'sprite' : 'background'] === $parent.$index}" class="palette-color" ng-click="editColor($index);" ng-repeat="color in subpalette track by $index" style="background-color: {{getRGB(getMainColor(color))}};"></div>
+        </div>
+      </div>
+
+      <div class="main-colors" ng-class="{'shifted': choose_color}" oncontextmenu="return false;">
+        <div ng-repeat="y in getIterators(4)">
+          <div ng-repeat="x in getIterators(16)" ng-init="main_color = main_colors[y*16 + x];" ng-click="selectMainColor(main_color.hex);" style="background-color: {{getRGB(main_color)}};"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
