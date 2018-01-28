@@ -203,7 +203,6 @@ app.controller("nesEditorController", function($scope) {
       active_tile_y: $scope.active_tile_y,
       nametables: $scope.nametables,
       attribute_tables: $scope.attribute_tables,
-      choose_color: $scope.choose_color,
       selected_palette: $scope.selected_palette,
       selected_color: $scope.selected_color,
       tab: $scope.tab,
@@ -234,7 +233,6 @@ app.controller("nesEditorController", function($scope) {
     $scope.active_tile_y = state.active_tile_y;
     $scope.nametables = state.nametables;
     $scope.attribute_tables = state.attribute_tables;
-    $scope.choose_color = state.choose_color;
     $scope.selected_palette = state.selected_palette;
     $scope.selected_color = state.selected_color;
     $scope.tab = state.tab;
@@ -265,43 +263,46 @@ app.controller("nesEditorController", function($scope) {
     return parseInt($scope.tab.substr(-1)) - 1;
   };
 
-  var file_uploads = document.getElementsByClassName('file-upload');
-  for (var i = 0; i < file_uploads.length; i++) {
-    var file_upload = file_uploads[i];
-    file_upload.addEventListener('change', function() {
+  angular.element(document).ready(function () {
 
-      $scope.loading = this.files.length;
-      $scope.$apply();
+    var file_uploads = document.getElementsByClassName('file-upload');
+    for (var i = 0; i < file_uploads.length; i++) {
+      let file_upload = file_uploads[i];
+      
+      file_upload.addEventListener('change', function() {
 
-      for (var i = 0; i < this.files.length; i++) {
-        var reader = new FileReader();
+        $scope.loading = this.files.length;
+        $scope.$apply();
 
-        reader.onload = function(event) {
-          var fileName = event.target.fileName;
-          var binaryString = this.result;
+        for (var i = 0; i < this.files.length; i++) {
+          var reader = new FileReader();
 
-          if (file_upload.id === 'sprite-upload') {
-            loadTiles(stringToBytes(binaryString), false);
-          }
-          else if (file_upload.id === 'background-upload') {
-            loadTiles(stringToBytes(binaryString), true);
-          }
-          else if (file_upload.id === 'palette-upload') {
-            loadPalettes(stringToBytes(binaryString));
-          }
-          else if (file_upload.id === 'nametable-upload') {
-            loadNametable(stringToBytes(binaryString));
-          }
-          $scope.loading--;
-          $scope.$apply();
-        };
+          reader.onload = function(event) {
+            var fileName = event.target.fileName;
+            var binaryString = this.result;
+            if (file_upload.id === 'sprite-upload') {
+              loadTiles(stringToBytes(binaryString), false);
+            }
+            else if (file_upload.id === 'background-upload') {
+              loadTiles(stringToBytes(binaryString), true);
+            }
+            else if (file_upload.id === 'palette-upload') {
+              loadPalettes(stringToBytes(binaryString));
+            }
+            else if (file_upload.id === 'nametable-upload') {
+              loadNametable(stringToBytes(binaryString));
+            }
+            $scope.loading--;
+            $scope.$apply();
+          };
 
-        reader.fileName = this.files[i].name;
-        reader.readAsBinaryString(this.files[i]);
-      }
-      file_upload.value = "";
-    }, false);
-  }
+          reader.fileName = this.files[i].name;
+          reader.readAsBinaryString(this.files[i]);
+        }
+        file_upload.value = "";
+      }, false);
+    }
+  });
 
   var saveByteArray = (function () {
 

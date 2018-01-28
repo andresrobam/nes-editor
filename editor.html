@@ -54,8 +54,8 @@
             <a href="" ng-class="{'disabled-icon': redos.length === 0}" ng-click="redos.length !== 0 &amp;&amp; redo()"><img src="icons/redo.svg"></a>
           </div>
         </div>
-        <div oncontextmenu="return false;">
-          <div ng-if="!tab.startsWith('nametable')" class="pixelcol" ng-repeat="x in tiles[tab][active_tile_x][active_tile_y] track by $index">
+        <div ng-if="!tab.startsWith('nametable')" oncontextmenu="return false;">
+          <div class="pixelcol" ng-repeat="x in tiles[tab][active_tile_x][active_tile_y] track by $index">
             <div class="big-pixel" ng-repeat="y in x track by $index" ng-mousedown="paint($event, tab, active_tile_x, active_tile_y, $parent.$index, $index);" ng-mouseover="paint($event, tab, active_tile_x, active_tile_y, $parent.$index, $index);" style="background-color: {{getRGB(getMainColor(palettes[tab][selected_palette[tab]][y]))}};"></div>
           </div>
         </div>
@@ -108,7 +108,7 @@
           <div style="position: relative;">
             <span ng-if="$index === 0" style="float: left; display: inline-block;">Palettes</span>
             <span style="display: block; margin-bottom: 5px;" ng-repeat="number in getNumbers($index) track by $index">{{number}}</span>
-            <div ng-show="$index === 0" style="display: table-row; position: absolute; bottom: -4px;" class="tool-icons tool-icons-small">
+            <div ng-if="$index === 0" style="display: table-row; position: absolute; bottom: -4px;" class="tool-icons tool-icons-small">
               <label style="cursor: pointer;" for="palette-upload"><img src="icons/upload.svg"></label>
               <input style="display: none;" type="file" id="palette-upload" class="file-upload" name="file" accept=".pal"/>
               <a href="" ng-click="savePalette(project_name)"><img src="icons/download.svg"></a>
